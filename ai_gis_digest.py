@@ -7,15 +7,16 @@ from datetime import datetime
 import feedparser
 import requests
 from bs4 import BeautifulSoup
-import re
+import sys
+import os
 
 # ===== CONFIGURATION =====
-EMAIL_ADDRESS = "giovannibwayo@gmail.com"  # Your Gmail address
-EMAIL_PASSWORD = "xfgy cnrd suva raxv"    # Your Gmail app password 
+EMAIL_ADDRESS = os.getenv("NEWS_SENDER_EMAIL", "giovannibwayo@gmail.com")
+EMAIL_PASSWORD = os.getenv("NEWS_EMAIL_PASSWORD", "xfgy cnrd suva raxv")
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
-RECIPIENT_EMAIL = "giovannibwayo@gmail.com"
-MAX_ARTICLES = 10  # Limit to top 10 articles
+RECIPIENT_EMAIL = os.getenv("NEWS_RECIPIENT_EMAIL", "giovannibwayo@gmail.com")
+MAX_ARTICLES = 5  # Limit to top 5 articles
 
 # ===== FUNCTIONS =====
 def extract_content_from_url(url):
@@ -106,13 +107,8 @@ def calculate_relevance_score(article_title, article_content, source):
     elif "nasa" in source:
         score += 3  # NASA has quality geospatial content
     
-    # Recency bonus (if we can parse the date)
-    try:
-        published_date = article.get('published', '')
-        if '2025' in published_date or '2024' in published_date:
-            score += 2
-    except:
-        pass
+    # Recency bonus intentionally omitted here since publish date
+    # is not available in this function's inputs.
     
     return score
 
@@ -209,19 +205,20 @@ def generate_email_content(articles):
     <head>
         <style>
             body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; }}
-            .header {{ background-color: #f8f9fa; padding: 20px; text-align: center; border-bottom: 2px solid #4CAF50; }}
-            .article {{ margin-bottom: 25px; padding: 15px; border-left: 4px solid #4CAF50; background-color: #f9f9f9; }}
+            .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; text-align: center; }}
+            .article {{ margin-bottom: 30px; padding: 20px; border-radius: 8px; background-color: #f8f9fa; border-left: 5px solid #667eea; }}
             .article h3 {{ margin-top: 0; color: #2c3e50; }}
-            .article a {{ color: #3498db; text-decoration: none; }}
+            .article a {{ color: #3498db; text-decoration: none; font-weight: bold; }}
             .article a:hover {{ text-decoration: underline; }}
-            .meta {{ font-size: 0.9em; color: #7f8c8d; margin-bottom: 10px; }}
-            .score {{ float: right; background-color: #4CAF50; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; }}
-            .footer {{ margin-top: 30px; padding: 15px; text-align: center; font-size: 0.9em; color: #7f8c8d; border-top: 1px solid #eee; }}
-            .source-badge {{ display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.8em; margin-right: 8px; }}
-            .source-arxiv {{ background-color: #b6e3ff; color: #005c9e; }}
-            .source-google {{ background-color: #fce8e6; color: #c5221f; }}
-            .source-esri {{ background-color: #e6f4ea; color: #137333; }}
-            .source-medium {{ background-color: #000; color: white; }}
+            .meta {{ font-size: 0.9em; color: #7f8c8d; margin-bottom: 12px; }}
+            .score {{ float: right; background-color: #667eea; color: white; padding: 4px 12px; border-radius: 15px; font-size: 0.85em; }}
+            .footer {{ margin-top: 40px; padding: 20px; text-align: center; font-size: 0.9em; color: #7f8c8d; border-top: 1px solid #eee; }}
+            .source-badge {{ display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 0.8em; margin-right: 10px; }}
+            .source-arxiv {{ background-color: #8e44ad; color: white; }}
+            .source-google {{ background-color: #e74c3c; color: white; }}
+            .source-esri {{ background-color: #2ecc71; color: white; }}
+            .source-medium {{ background-color: #3498db; color: white; }}
+            .insight {{ background-color: #fff3cd; border-left: 5px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 5px; }}
         </style>
     </head>
     <body>
@@ -229,6 +226,12 @@ def generate_email_content(articles):
             <h1>🌍 AI & GIS Daily Digest</h1>
             <p>{datetime.now().strftime('%A, %B %d, %Y')}</p>
             <p>Top {len(articles)} most relevant articles curated for you</p>
+        </div>
+
+        <div class="insight">
+            <strong>📈 Today's Focus:</strong> The most significant developments in geospatial AI,
+            machine learning applications, and data science innovations that are shaping today's landscape.
+            Expect a concise mix of notable research, product releases, and practical use-cases you can skim in minutes.
         </div>
     """
     
@@ -251,50 +254,58 @@ def generate_email_content(articles):
             source_name = "Blog"
             
         html_content += f"""
-        <div class="article">
-            <span class="score">Relevance: {article['score']}</span>
+        <div class=\"article\">
+            <span class=\"score\">Relevance: {article['score']}</span>
             <h3>{i}. {article['title']}</h3>
-            <div class="meta">
-                <span class="source-badge {source_class}">{source_name}</span>
+            <div class=\"meta\">
+                <span class=\"source-badge {source_class}\">{source_name}</span>
                 <strong>Published:</strong> {article['published']}
             </div>
             <p>{article['summary']}</p>
-            <p><a href="{article['link']}">📖 Read full article</a></p>
+            <p><a href=\"{article['link']}\">🔗 Read full article</a></p>
         </div>
         """
     
     html_content += f"""
-        <div class="footer">
-            <p>Curated from {len(articles)} most relevant articles found today</p>
-            <p>This digest was automatically generated for Giovanni Bwayo</p>
+        <div class=\"footer\">
+            <p>Curated from leading sources • {datetime.now().strftime('%Y-%m-%d')}</p>
+            <p>This daily digest was created for Giovanni Bwayo</p>
         </div>
     </body>
     </html>
     """
     return html_content
 
-def send_email_smtp(content):
-    """Send email using SMTP"""
+def send_email_smtp(content, recipient_email: str = None, subject: str = None,
+    sender_email: str = None, sender_password: str = None):
+    """Send email using SMTP.
+    Optional overrides allow sending to any recipient and using different sender creds.
+    """
+    from_addr = sender_email or EMAIL_ADDRESS
+    password = sender_password or EMAIL_PASSWORD
+    to_addr = recipient_email or RECIPIENT_EMAIL
+    email_subject = subject or f"AI & GIS Daily Digest - {datetime.now().strftime('%Y-%m-%d')}"
+
     msg = MIMEMultipart("alternative")
-    msg['Subject'] = f"AI & GIS Daily Digest - {datetime.now().strftime('%Y-%m-%d')}"
-    msg['From'] = EMAIL_ADDRESS
-    msg['To'] = RECIPIENT_EMAIL
-    
+    msg['Subject'] = email_subject
+    msg['From'] = from_addr
+    msg['To'] = to_addr
+
     msg.attach(MIMEText(content, "html"))
-    
+
     try:
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
             server.starttls()
-            server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+            server.login(from_addr, password)
             server.send_message(msg)
-        print(f"{datetime.now()}: Email sent successfully to {RECIPIENT_EMAIL}")
+        print(f"{datetime.now()}: Email sent successfully to {to_addr}")
         return True
     except Exception as e:
         print(f"{datetime.now()}: Error sending email: {e}")
         return False
 
-def send_daily_digest():
-    """Main function to fetch news and send email"""
+def send_daily_digest(recipient_email: str = None):
+    """Main function to fetch news and send email. Allows recipient override."""
     print(f"{datetime.now()}: Starting to fetch AI & GIS news...")
     
     # Get news articles
@@ -309,7 +320,7 @@ def send_daily_digest():
     email_content = generate_email_content(top_articles)
     
     # Send email
-    success = send_email_smtp(email_content)
+    success = send_email_smtp(email_content, recipient_email=recipient_email)
     
     if success:
         print(f"{datetime.now()}: Digest sent with {len(top_articles)} articles")
@@ -320,22 +331,30 @@ def run_once():
     """Run the digest once (for testing)"""
     send_daily_digest()
 
+# Add this function to check if running in Streamlit
+def is_running_in_streamlit():
+    return 'streamlit' in sys.modules
+
 # ===== MAIN EXECUTION =====
 if __name__ == "__main__":
-    print("AI & GIS Daily Digest System")
-    print("============================")
-    
-    # Run once immediately for testing
-    print("Running initial test...")
-    run_once()
-    
-    # Schedule daily at 8:00 AM
-    schedule.every().day.at("08:00").do(send_daily_digest)
-    
-    print("Scheduler started. Will run daily at 8:00 AM.")
-    print("Press Ctrl+C to exit.")
-    
-    # Keep the script running
-    while True:
-        schedule.run_pending()
-        time.sleep(60)
+    if is_running_in_streamlit():
+        # When running in Streamlit, just define functions but don't auto-run
+        print("Running in Streamlit mode - functions available but not auto-executing")
+    else:
+        print("AI & GIS Daily Digest System")
+        print("============================")
+        
+        # Run once immediately for testing
+        print("Running initial test...")
+        run_once()
+        
+        # Schedule daily at 8:00 AM
+        schedule.every().day.at("08:00").do(send_daily_digest)
+        
+        print("Scheduler started. Will run daily at 8:00 AM.")
+        print("Press Ctrl+C to exit.")
+        
+        # Keep the script running
+        while True:
+            schedule.run_pending()
+            time.sleep(60)

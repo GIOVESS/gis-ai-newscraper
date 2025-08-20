@@ -1,4 +1,6 @@
-schedule
+streamlit
 feedparser
 beautifulsoup4
 requests
+schedule
+pandas

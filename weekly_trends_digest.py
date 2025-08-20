@@ -7,13 +7,16 @@ from datetime import datetime, timedelta
 import feedparser
 import requests
 from bs4 import BeautifulSoup
+import re
+import sys
+import os
 
 # ===== CONFIGURATION =====
-EMAIL_ADDRESS = "giovannibwayo@gmail.com"  # Your Gmail address
-EMAIL_PASSWORD = "xfgy cnrd suva raxv"    # Your Gmail app password 
+EMAIL_ADDRESS = os.getenv("NEWS_SENDER_EMAIL", "giovannibwayo@gmail.com")
+EMAIL_PASSWORD = os.getenv("NEWS_EMAIL_PASSWORD", "xfgy cnrd suva raxv")
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
-RECIPIENT_EMAIL = "giovannibwayo@gmail.com"
+RECIPIENT_EMAIL = os.getenv("NEWS_RECIPIENT_EMAIL", "giovannibwayo@gmail.com")
 MAX_TRENDS = 10  # Limit to top 10 trends
 
 # ===== INDUSTRY TRENDS SOURCES =====
@@ -302,28 +305,34 @@ def generate_trends_email_content(trends):
     """
     return html_content
 
-def send_trends_email(content):
-    """Send trends email using SMTP"""
+def send_trends_email(content, recipient_email: str = None, subject: str = None,
+    sender_email: str = None, sender_password: str = None):
+    """Send trends email using SMTP with optional overrides."""
+    from_addr = sender_email or EMAIL_ADDRESS
+    password = sender_password or EMAIL_PASSWORD
+    to_addr = recipient_email or RECIPIENT_EMAIL
+    email_subject = subject or f"🌐 GIS & AI Weekly Trends - {datetime.now().strftime('%Y-%m-%d')}"
+
     msg = MIMEMultipart("alternative")
-    msg['Subject'] = f"🌐 GIS & AI Weekly Trends - {datetime.now().strftime('%Y-%m-%d')}"
-    msg['From'] = EMAIL_ADDRESS
-    msg['To'] = RECIPIENT_EMAIL
-    
+    msg['Subject'] = email_subject
+    msg['From'] = from_addr
+    msg['To'] = to_addr
+
     msg.attach(MIMEText(content, "html"))
-    
+
     try:
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
             server.starttls()
-            server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+            server.login(from_addr, password)
             server.send_message(msg)
-        print(f"{datetime.now()}: Trends email sent successfully!")
+        print(f"{datetime.now()}: Trends email sent successfully to {to_addr}!")
         return True
     except Exception as e:
         print(f"{datetime.now()}: Error sending trends email: {e}")
         return False
 
-def send_weekly_trends_digest():
-    """Main function to fetch trends and send weekly email"""
+def send_weekly_trends_digest(recipient_email: str = None):
+    """Main function to fetch trends and send weekly email. Allows recipient override."""
     print(f"{datetime.now()}: Starting weekly trends collection...")
     
     # Get industry trends
@@ -338,29 +347,37 @@ def send_weekly_trends_digest():
     email_content = generate_trends_email_content(top_trends)
     
     # Send email
-    success = send_trends_email(email_content)
+    success = send_trends_email(email_content, recipient_email=recipient_email)
     
     if success:
         print(f"{datetime.now()}: Weekly trends digest sent with {len(top_trends)} trends")
     else:
         print(f"{datetime.now()}: Failed to send trends digest")
 
+# Add this function to check if running in Streamlit
+def is_running_in_streamlit():
+    return 'streamlit' in sys.modules
+
 # ===== MAIN EXECUTION =====
 if __name__ == "__main__":
-    print("GIS & AI Weekly Trends Digest System")
-    print("====================================")
-    
-    # Run once immediately for testing
-    print("Running initial trends test...")
-    send_weekly_trends_digest()
-    
-    # Schedule weekly on Monday at 8:00 AM
-    schedule.every().monday.at("08:00").do(send_weekly_trends_digest)
-    
-    print("Weekly trends scheduler started. Will run every Monday at 8:00 AM.")
-    print("Press Ctrl+C to exit.")
-    
-    # Keep the script running
-    while True:
-        schedule.run_pending()
-        time.sleep(3600)  # Check every hour
+    if is_running_in_streamlit():
+        # When running in Streamlit, just define functions but don't auto-run
+        print("Running in Streamlit mode - functions available but not auto-executing")
+    else:
+        print("GIS & AI Weekly Trends Digest System")
+        print("====================================")
+        
+        # Run once immediately for testing
+        print("Running initial trends test...")
+        send_weekly_trends_digest()
+        
+        # Schedule weekly on Monday at 8:00 AM
+        schedule.every().monday.at("08:00").do(send_weekly_trends_digest)
+        
+        print("Weekly trends scheduler started. Will run every Monday at 8:00 AM.")
+        print("Press Ctrl+C to exit.")
+        
+        # Keep the script running
+        while True:
+            schedule.run_pending()
+            time.sleep(3600)  # Check every hour

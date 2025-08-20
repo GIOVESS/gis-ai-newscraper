@@ -1,173 +1,98 @@
-# Simple README for News Scrapers
+## GIS & AI Newscraper
 
-```markdown
-# News Scrapers
+Automated daily and weekly email digests for GIS and AI, plus a Streamlit dashboard to preview and send.
 
-Automated news digest systems for AI, GIS, and Data Science trends.
+### Overview
 
-##  Overview
-
-This repository contains two Python scripts that automatically curate and send email digests:
-
-1. **Daily AI & GIS Digest** - Sends daily articles at 8:00 AM
-2. **Weekly Trends Digest** - Sends industry trends every Monday at 8:00 AM
-
-##  Quick Setup
+This repository contains:
+- **Daily AI & GIS Digest** (`ai_gis_digest.py`) – fetches and emails top AI/GIS articles
+- **Weekly Trends Digest** (`weekly_trends_digest.py`) – compiles notable weekly trends
+- **Streamlit Dashboard** (`app.py`) – preview results and send emails interactively
 
 ### Prerequisites
-- Python 3.7+
-- Gmail account with App Password
+- Python 3.9+
+- Gmail account with an App Password
 
-### Installation
-1. Clone the repository:
+### Install
 ```bash
-git clone https://github.com/GIOVESS/news-scrapers.git
-cd news-scrapers
-```
-
-2. Install dependencies:
-```bash
+git clone https://github.com/GIOVESS/gis-ai-newscraper.git
+cd gis-ai-newscraper
+python -m venv .venv
+.venv\Scripts\activate  # PowerShell on Windows
 pip install -r requirements.txt
 ```
 
-3. Configure your email settings in both scripts:
-   - Edit `ai_gis_digest.py` and `weekly_trends_digest.py`
-   - Set your Gmail address and App Password:
-   ```python
-   EMAIL_ADDRESS = "your.email@gmail.com"
-   EMAIL_PASSWORD = "your-app-password"
-   ```
-
-### Gmail App Password Setup
-1. Enable 2-Step Verification on your Google Account
-2. Go to [App Passwords](https://myaccount.google.com/apppasswords)
-3. Generate a new app password for "Mail"
-4. Use this 16-character password in the scripts
-
-##  Scripts
-
-### 1. Daily AI & GIS Digest (`ai_gis_digest.py`)
-- **Schedule**: Daily at 8:00 AM
-- **Content**: Curated AI and GIS articles from multiple sources
-- **Features**: Relevance scoring, top 10 articles, HTML formatting
-
-### 2. Weekly Trends Digest (`weekly_trends_digest.py`) 
-- **Schedule**: Every Monday at 8:00 AM
-- **Content**: Industry trends and developments in GIS, AI, and Data Science
-- **Features**: Trend detection, impact scoring, professional formatting
-
-##  Windows Task Automation
-
-### Method 1: Using Task Scheduler (Recommended)
-
-#### For Daily Digest:
-1. Open Task Scheduler
-2. Create Basic Task:
-   - Name: `Daily AI GIS Digest`
-   - Trigger: Daily at 8:00 AM
-   - Action: Start a program
-   - Program: `python`
-   - Arguments: `E:\PROJECT\news-scrapers\ai_gis_digest.py`
-   - Start in: `E:\PROJECT\news-scrapers`
-
-#### For Weekly Digest:
-1. Open Task Scheduler  
-2. Create Basic Task:
-   - Name: `Weekly GIS AI Trends`
-   - Trigger: Weekly on Mondays at 8:00 AM
-   - Action: Start a program
-   - Program: `python`
-   - Arguments: `E:\PROJECT\news-scrapers\weekly_trends_digest.py`
-   - Start in: `E:\PROJECT\news-scrapers`
-
-### Method 2: Batch Files (Alternative)
-
-Create `start_daily.bat`:
-```batch
-@echo off
-cd /d "E:\PROJECT\news-scrapers"
-python ai_gis_digest.py
+### Configure email
+You can configure credentials in two ways:
+- Via the Streamlit dashboard sidebar (recommended): run the app and enter your Gmail and App Password; it updates `ai_gis_digest.py` and `weekly_trends_digest.py` automatically.
+- Manually edit both files and set:
+```python
+EMAIL_ADDRESS = "your.email@gmail.com"
+EMAIL_PASSWORD = "your-app-password"
 ```
 
-Create `start_weekly.bat`:
-```batch  
-@echo off
-cd /d "E:\PROJECT\news-scrapers"
-python weekly_trends_digest.py
-```
+Gmail App Password steps:
+1) Enable 2-Step Verification  2) Open `https://myaccount.google.com/apppasswords`  3) Create an App Password for Mail  4) Use the 16-character password above
 
-Schedule these batch files using Task Scheduler.
-
-##  Testing
-
-Test each script manually first:
-
+### Run
 ```bash
-# Test daily digest
+# Streamlit dashboard (preview + send)
+streamlit run app.py
+
+# Daily digest (one-off)
 python ai_gis_digest.py
 
-# Test weekly trends  
+# Weekly trends (one-off)
 python weekly_trends_digest.py
 ```
 
-Check your email to verify the digests are working correctly.
+### Windows Task Scheduler
+- Daily task
+  - Program: `python`
+  - Arguments: `E:\PROJECT\daily-digest\ai_gis_digest.py`
+  - Start in: `E:\PROJECT\daily-digest`
+- Weekly task (Monday 08:00)
+  - Program: `python`
+  - Arguments: `E:\PROJECT\daily-digest\weekly_trends_digest.py`
+  - Start in: `E:\PROJECT\daily-digest`
 
-##  Project Structure
-
+### Testing
+```bash
+# Send a simple test email from within the app (Tab: "Test Email")
+# or run the helper script directly:
+python test_email.py
 ```
-news-scrapers/
+
+### Project structure
+```
+daily-digest/
 ├── ai_gis_digest.py          # Daily article digest
-├── weekly_trends_digest.py   # Weekly trends digest  
-├── requirements.txt          # Python dependencies
-├── README.md                # This file
-└── .gitignore              # Git ignore file
+├── weekly_trends_digest.py   # Weekly trends digest
+├── app.py                    # Streamlit dashboard
+├── requirements.txt          # Dependencies
+├── test_digest.py            # Helpers/tests
+├── test_email.py             # Test email sender
+└── README.md
 ```
 
-##  Troubleshooting
+### Troubleshooting
+- **SMTP auth error**: verify App Password and that 2FA is enabled
+- **Empty results**: try again later; sources can fluctuate
+- **Firewall/Network**: ensure Python has outbound internet access
 
-### Common Issues:
-1. **SMTP Authentication Error**: Verify your App Password is correct
-2. **No Articles Found**: Check internet connection and source availability
-3. **Script Stops**: Ensure Python is in system PATH
+### License
+MIT
 
-### Logs:
-- Check console output for errors
-- Scripts print status messages with timestamps
+### Maintainer
+Giovanni Bwayo • giovannibwayo@gmail.com • giovannibwayo.site
 
-##  License
-
-MIT License - feel free to use and modify for your needs.
-
-##  Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
-
----
-
-**Maintainer**: Giovanni Bwayo  
-**Portfolio**: giovannibwayo.site
-```
-
-## Git Push Commands
-
+### Git push (this repo)
 ```bash
-# Initialize git (if not already done)
 git init
-
-# Add all files
 git add .
-
-# Commit changes
-git commit -m "Initial commit: Add news scraper scripts and documentation"
-
-# Add remote origin
-git remote add origin https://github.com/GIOVESS/news-scrapers.git
-
-# Push to main branch
+git commit -m "Initial commit: GIS & AI newscraper"
 git branch -M main
+git remote add origin https://github.com/GIOVESS/gis-ai-newscraper.git
 git push -u origin main
 ```
 
