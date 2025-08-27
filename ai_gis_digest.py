@@ -16,7 +16,7 @@ EMAIL_PASSWORD = os.getenv("NEWS_EMAIL_PASSWORD", "xfgy cnrd suva raxv")
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 RECIPIENT_EMAIL = os.getenv("NEWS_RECIPIENT_EMAIL", "giovannibwayo@gmail.com")
-MAX_ARTICLES = 5  # Limit to top 5 articles
+MAX_ARTICLES = 8  # Limit to top 8 articles
 
 # ===== FUNCTIONS =====
 def extract_content_from_url(url):
